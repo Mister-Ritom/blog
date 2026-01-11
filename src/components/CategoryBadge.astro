@@ -1,0 +1,48 @@
+---
+import type { Category } from '@data/blog';
+
+interface Props {
+    category: Category;
+    size?: 'sm' | 'md';
+}
+
+const { category, size = 'sm' } = Astro.props;
+const bgColor = category.color || '#6B7280';
+---
+
+<a
+    href={`/blog?category=${category.slug.current}`}
+    class={`category-badge ${size}`}
+    style={`--badge-color: ${bgColor}`}
+>
+    {category.name}
+</a>
+
+<style>
+    .category-badge {
+        display: inline-block;
+        padding: 0.375rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        background-color: var(--badge-color);
+        color: white;
+        text-decoration: none;
+        transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+
+    .category-badge:hover {
+        transform: translateY(-1px);
+        opacity: 0.9;
+    }
+
+    .category-badge.sm {
+        padding: 0.25rem 0.625rem;
+        font-size: 0.75rem;
+    }
+
+    .category-badge.md {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+    }
+</style>

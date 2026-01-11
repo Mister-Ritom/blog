@@ -1,0 +1,251 @@
+---
+interface Props {
+    content: any[];
+}
+
+const { content } = Astro.props;
+
+import urlBuilder from '@sanity/image-url';
+import { client } from '@utils/sanity-client';
+import InArticleAd from './InArticleAd.astro';
+
+const builder = urlBuilder(client);
+
+function getImageUrl(source: any, width: number) {
+    if (!source) return null;
+    return builder.image(source).width(width).url();
+}
+
+// Render a single block
+function renderBlock(block: any): string {
+    if (block._type === 'block') {
+        const style = block.style || 'normal';
+        const children = block.children || [];
+        
+        let text = children.map((child: any) => {
+            let content = child.text || '';
+            
+            // Apply marks
+            if (child.marks && child.marks.length > 0) {
+                child.marks.forEach((mark: string) => {
+                    if (mark === 'strong') content = `<strong>${content}</strong>`;
+                    else if (mark === 'em') content = `<em>${content}</em>`;
+                    else if (mark === 'code') content = `<code>${content}</code>`;
+                });
+            }
+            
+            return content;
+        }).join('');
+        
+        // Wrap in appropriate tag
+        if (style === 'h2') return `<h2>${text}</h2>`;
+        if (style === 'h3') return `<h3>${text}</h3>`;
+        if (style === 'h4') return `<h4>${text}</h4>`;
+        if (style === 'blockquote') return `<blockquote>${text}</blockquote>`;
+        return `<p>${text}</p>`;
+    }
+    
+    return '';
+}
+---
+
+<div class="portable-text">
+    {(() => {
+        let paragraphCount = 0;
+        return content && content.map((block: any) => {
+            let elements = [];
+            
+            // Handle regular blocks (paragraphs, headings, quotes)
+            if (block._type === 'block') {
+                const isParagraph = !block.style || block.style === 'normal';
+                if (isParagraph) paragraphCount++;
+                
+                elements.push(<Fragment set:html={renderBlock(block)} />);
+                
+                // Inject ad after the 2nd paragraph
+                if (paragraphCount === 2 && isParagraph) {
+                    elements.push(<InArticleAd />);
+                }
+            }
+            
+            // Handle images
+            else if (block._type === 'image') {
+                const imageUrl = getImageUrl(block, 800);
+                elements.push(
+                    <figure class="content-image">
+                        <img
+                            src={imageUrl}
+                            alt={block.alt || ''}
+                            loading="lazy"
+                        />
+                        {block.caption && <figcaption>{block.caption}</figcaption>}
+                    </figure>
+                );
+            }
+            
+            // Handle code blocks
+            else if (block._type === 'code') {
+                const language = block.language || 'text';
+                elements.push(
+                    <div class="code-block">
+                        {block.filename && <div class="code-filename">{block.filename}</div>}
+                        <pre><code class={`language-${language}`}>{block.code}</code></pre>
+                    </div>
+                );
+            }
+            
+            return elements;
+        });
+    })()}
+</div>
+
+
+<style>
+    .portable-text {
+        font-family: 'Lora', 'Georgia', serif;
+        font-size: 1.125rem;
+        line-height: 1.8;
+        color: var(--fallback-bc,oklch(var(--bc)/.9));
+        max-width: 65ch;
+    }
+
+    .portable-text :global(h2) {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-size: 2rem;
+        font-weight: 700;
+        line-height: 1.3;
+        color: var(--base-content);
+        margin: 2.5rem 0 1rem 0;
+    }
+
+    .portable-text :global(h3) {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-size: 1.5rem;
+        font-weight: 600;
+        line-height: 1.4;
+        color: var(--base-content);
+        margin: 2rem 0 0.75rem 0;
+    }
+
+    .portable-text :global(h4) {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-size: 1.25rem;
+        font-weight: 600;
+        line-height: 1.4;
+        color: var(--fallback-bc,oklch(var(--bc)/.8));
+        margin: 1.5rem 0 0.5rem 0;
+    }
+
+    .portable-text :global(p) {
+        margin: 1.25rem 0;
+    }
+
+    .portable-text :global(strong) {
+        font-weight: 700;
+        color: var(--base-content);
+    }
+
+    .portable-text :global(em) {
+        font-style: italic;
+    }
+
+    .portable-text :global(code) {
+        font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        font-size: 0.9em;
+        background-color: var(--base-200);
+        padding: 0.2em 0.4em;
+        border-radius: 0.25rem;
+        color: var(--primary);
+    }
+
+    .portable-text :global(a) {
+        color: var(--primary);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+        transition: opacity 0.2s ease;
+    }
+
+    .portable-text :global(a:hover) {
+        opacity: 0.8;
+    }
+
+    .portable-text :global(blockquote) {
+        margin: 2rem 0;
+        padding-left: 1.5rem;
+        border-left: 4px solid var(--fallback-bc,oklch(var(--bc)/.2));
+        font-style: italic;
+        color: var(--fallback-bc,oklch(var(--bc)/.6));
+    }
+
+    .content-image {
+        margin: 2.5rem 0;
+    }
+
+    .content-image img {
+        width: 100%;
+        height: auto;
+        max-height: 600px;
+        object-fit: contain;
+        border-radius: 0.5rem;
+        display: block;
+        margin: 0 auto;
+    }
+
+    .content-image figcaption {
+        margin-top: 0.75rem;
+        font-size: 0.875rem;
+        color: var(--fallback-bc,oklch(var(--bc)/.6));
+        text-align: center;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    .code-block {
+        margin: 2rem 0;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        background-color: var(--base-300);
+        border: 1px solid var(--fallback-bc,oklch(var(--bc)/.1));
+    }
+
+    .code-filename {
+        padding: 0.75rem 1rem;
+        background-color: var(--base-200);
+        color: var(--fallback-bc,oklch(var(--bc)/.5));
+        font-size: 0.875rem;
+        font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        border-bottom: 1px solid var(--fallback-bc,oklch(var(--bc)/.1));
+    }
+
+    .code-block pre {
+        margin: 0;
+        padding: 1.25rem;
+        overflow-x: auto;
+    }
+
+    .code-block code {
+        font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        font-size: 0.9375rem;
+        line-height: 1.6;
+        color: var(--base-content);
+        background: none;
+        padding: 0;
+    }
+
+    @media (max-width: 768px) {
+        .portable-text {
+            font-size: 1rem;
+        }
+
+        .portable-text :global(h2) {
+            font-size: 1.75rem;
+        }
+
+        .portable-text :global(h3) {
+            font-size: 1.375rem;
+        }
+
+        .portable-text :global(h4) {
+            font-size: 1.125rem;
+        }
+    }
+</style>

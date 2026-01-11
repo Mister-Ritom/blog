@@ -1,0 +1,148 @@
+---
+interface Props {
+    adSlot?: string;
+    adFormat?: 'auto' | 'fluid' | 'rectangle';
+    fullWidthResponsive?: boolean;
+}
+
+const {
+    adSlot = '0000000000',
+    adFormat = 'auto',
+    fullWidthResponsive = true
+} = Astro.props;
+
+// Use environment variables for AdSense configuration
+const adClient = import.meta.env.PUBLIC_ADSENSE_CLIENT_ID || 'ca-pub-test';
+const adsEnabled = import.meta.env.PUBLIC_ADSENSE_ENABLED === 'true';
+
+// Only render ads if enabled
+if (!adsEnabled) {
+    console.log('[AdSense] Ads are disabled. Set PUBLIC_ADSENSE_ENABLED=true in .env to enable.');
+} else if (adClient === 'ca-pub-test') {
+    console.warn('[AdSense] Ads are enabled but PUBLIC_ADSENSE_CLIENT_ID is missing or set to test ID.');
+} else {
+    console.log(`[AdSense] Ads enabled with client: ${adClient}`);
+}
+---
+
+{adsEnabled && (
+    <div class="adsense-container" data-ad-client={adClient}>
+        <ins
+            class="adsbygoogle"
+            style="display:block"
+            data-ad-client={adClient}
+            data-ad-slot={adSlot}
+            data-ad-format={adFormat}
+            data-full-width-responsive={fullWidthResponsive}
+        ></ins>
+        {adClient === 'ca-pub-test' && (
+            <div class="test-notice">
+                AdSense Test ID Active
+            </div>
+        )}
+    </div>
+)}
+
+{!adsEnabled && (
+    <div class="adsense-placeholder">
+        <p class="placeholder-text">
+            📢 Ad Space (Disabled)
+        </p>
+        <p class="placeholder-info">
+            Set <code>PUBLIC_ADSENSE_ENABLED=true</code> to enable
+        </p>
+    </div>
+)}
+
+
+<style>
+    .adsense-container {
+        margin: 2rem 0;
+        min-height: 100px;
+    }
+
+    .adsense-placeholder {
+        margin: 2rem 0;
+        padding: 2rem;
+        background-color: #F3F4F6;
+        border: 2px dashed #D1D5DB;
+        border-radius: 0.5rem;
+        text-align: center;
+    }
+
+    .placeholder-text {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #6B7280;
+        margin: 0 0 0.5rem 0;
+    }
+
+    .placeholder-info {
+        font-size: 0.875rem;
+        color: #9CA3AF;
+        margin: 0;
+    }
+
+    .placeholder-info code {
+        background-color: #E5E7EB;
+        padding: 0.2em 0.4em;
+        border-radius: 0.25rem;
+        font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    }
+
+    .test-notice {
+        font-size: 0.75rem;
+        color: #B45309;
+        background-color: #FFFBEB;
+        padding: 0.25rem 0.5rem;
+        border: 1px solid #FCD34D;
+        border-radius: 0.25rem;
+        margin-top: 0.5rem;
+        text-align: center;
+        font-family: 'Inter', sans-serif;
+    }
+</style>
+
+
+{adsEnabled && (
+    <script>
+        // Load AdSense script lazily using IntersectionObserver
+        document.addEventListener('DOMContentLoaded', () => {
+            const adElements = document.querySelectorAll('.adsbygoogle');
+            
+            if (adElements.length === 0) return;
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        // Load AdSense script if not already loaded
+                        if (!document.querySelector('script[src*="adsbygoogle.js"]')) {
+                            const script = document.createElement('script');
+                            script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js';
+                            script.async = true;
+                            script.crossOrigin = 'anonymous';
+                            document.head.appendChild(script);
+
+                            script.onload = () => {
+                                // Push ads after script loads
+                                const ads = document.querySelectorAll('.adsbygoogle');
+                                ads.forEach((ad) => {
+                                    if (!ad.hasAttribute('data-ad-status')) {
+                                        try {
+                                            (window.adsbygoogle = window.adsbygoogle || []).push({});
+                                        } catch (err) {
+                                            console.error('AdSense error:', err);
+                                        }
+                                    }
+                                });
+                            };
+                        }
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { rootMargin: '200px' });
+
+            adElements.forEach((ad) => observer.observe(ad));
+        });
+    </script>
+)}

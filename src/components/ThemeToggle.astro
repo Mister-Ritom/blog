@@ -1,0 +1,139 @@
+---
+---
+
+<label class="theme-toggle" aria-label="Toggle theme">
+    <input type="checkbox" id="theme-checkbox" class="sr-only" />
+    <div class="slider">
+        <div class="icon sun">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+        </div>
+        <div class="knob"></div>
+        <div class="icon moon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        </div>
+    </div>
+</label>
+
+<style>
+    .theme-toggle {
+        cursor: pointer;
+        display: inline-block;
+        user-select: none;
+    }
+
+    .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border-width: 0;
+    }
+
+    .slider {
+        position: relative;
+        width: 60px;
+        height: 32px;
+        background-color: var(--base-300);
+        border-radius: 100px;
+        padding: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid var(--fallback-bc,oklch(var(--bc)/.1));
+    }
+
+    .knob {
+        position: absolute;
+        left: 4px;
+        width: 24px;
+        height: 24px;
+        background-color: #ffffff;
+        border-radius: 50%;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 2;
+    }
+
+    input:checked + .slider .knob {
+        transform: translateX(28px);
+    }
+
+    .icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        z-index: 1;
+        color: var(--fallback-bc,oklch(var(--bc)/.4));
+        transition: color 0.3s ease;
+    }
+
+    .icon.sun {
+        margin-left: 2px;
+    }
+
+    .icon.moon {
+        margin-right: 2px;
+    }
+
+    input:not(:checked) + .slider .icon.sun {
+        color: #f59e0b;
+    }
+
+    input:checked + .slider .icon.moon {
+        color: #818cf8;
+    }
+
+    .theme-toggle:hover .slider {
+        border-color: var(--fallback-bc,oklch(var(--bc)/.2));
+    }
+</style>
+
+<script>
+    function initThemeToggle() {
+        const checkbox = document.getElementById('theme-checkbox') as HTMLInputElement;
+        const html = document.documentElement;
+
+        // Current theme state
+        const getCurrentTheme = () => html.getAttribute('data-theme') || 'light';
+        
+        // Update checkbox state to match actual theme
+        const updateCheckbox = () => {
+            if (checkbox) {
+                checkbox.checked = getCurrentTheme() === 'dark';
+            }
+        };
+
+        updateCheckbox();
+
+        checkbox?.addEventListener('change', () => {
+            const newTheme = checkbox.checked ? 'dark' : 'light';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            // Dispatch custom event for other components if needed
+            window.dispatchEvent(new CustomEvent('theme-change', { detail: newTheme }));
+        });
+
+        // Sync with system preference if no manual override exists
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            if (!localStorage.getItem('theme')) {
+                const systemTheme = e.matches ? 'dark' : 'light';
+                html.setAttribute('data-theme', systemTheme);
+                updateCheckbox();
+            }
+        });
+    }
+
+    // Initialize on page load
+    initThemeToggle();
+
+    // Re-initialize after Astro view transitions
+    document.addEventListener('astro:after-swap', initThemeToggle);
+</script>

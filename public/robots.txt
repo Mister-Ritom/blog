@@ -1,0 +1,11 @@
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://ritom.blog/sitemap-index.xml
+
+# Disallow admin/studio paths if needed
+User-agent: *
+Disallow: /admin/
+Disallow: /studio/

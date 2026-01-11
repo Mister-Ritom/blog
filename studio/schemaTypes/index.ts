@@ -17,6 +17,11 @@ import siteConfig from './siteConfig'
 import testimonial from './testimonial'
 import testimonialsSection from './testimonialsSection'
 
+// Blog schemas
+import author from './author'
+import category from './category'
+import post from './post'
+
 export const schemaTypes = [
   actionButton,
   actionLink,
@@ -36,4 +41,8 @@ export const schemaTypes = [
   siteConfig,
   testimonial,
   testimonialsSection,
+  // Blog types
+  author,
+  category,
+  post,
 ]

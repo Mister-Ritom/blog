@@ -2,6 +2,7 @@
 import { type Header } from 'types';
 import Action from '@components/Action.astro';
 import ResponsiveImage from '@components/ResponsiveImage.astro';
+import ThemeToggle from '@components/ThemeToggle.astro';
 
 interface Props extends Header {
     'data-sb-field-path'?: string;
@@ -13,9 +14,9 @@ const { title, logo, navLinks, 'data-sb-field-path': fieldPath } = Astro.props;
 <nav class="p-4 sm:p-5" data-sb-field-path={fieldPath}>
     <div class="flex items-center justify-between w-full gap-6 mx-auto max-w-7xl">
         {
-            logo.src ? (
+            logo?.src ? (
                 <a class="flex items-center" href="/">
-                    <ResponsiveImage _id={logo._id} src={logo.src} width={logo.dimensions?.width} height={logo.dimensions?.height} alt={logo.alt} />
+                    <ResponsiveImage _id={logo?._id} src={logo?.src} width={logo?.dimensions?.width} height={logo?.dimensions?.height} alt={logo?.alt} />
                 </a>
             ) : (
                 <a class="text-xl font-bold sm:text-2xl" href="/" data-sb-field-path=".title">
@@ -36,6 +37,10 @@ const { title, logo, navLinks, 'data-sb-field-path': fieldPath } = Astro.props;
                                 />
                             </li>
                         ))}
+
+                        <li class="pl-2 border-l border-base-200/50">
+                            <ThemeToggle />
+                        </li>
                     </ul>
                     <div class="relative lg:hidden">
                         <button
@@ -59,6 +64,15 @@ const { title, logo, navLinks, 'data-sb-field-path': fieldPath } = Astro.props;
                                         />
                                     </li>
                                 ))}
+                                <li class="pt-4 mt-4 border-t border-base-200/50">
+                                    <div class="flex flex-col gap-4">
+
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-sm font-medium opacity-70">Theme</span>
+                                            <ThemeToggle />
+                                        </div>
+                                    </div>
+                                </li>
                             </ul>
                         </div>
                     </div>
@@ -117,9 +131,12 @@ const { title, logo, navLinks, 'data-sb-field-path': fieldPath } = Astro.props;
         margin-top: -0.5625rem;
         transform: translateY(0.5rem) rotate(45deg);
     }
+
 </style>
 
 <script>
+    import { auth, provider, signInWithPopup, signOut, onAuthStateChanged } from '../utils/firebase';
+
     function navToggle() {
         const nav = document.querySelector('.nav-panel');
         const navToggleBtn = document.querySelector('.nav-toggle');
@@ -132,6 +149,84 @@ const { title, logo, navLinks, 'data-sb-field-path': fieldPath } = Astro.props;
             nav?.classList.toggle('is-visible');
         });
     }
-    navToggle();
-    document.addEventListener('astro:after-swap', navToggle);
+    
+    function setupAuthButtons() {
+        // Find all navigation links that look like login/signup buttons
+        const allNavLinks = document.querySelectorAll('nav a.btn');
+        
+        allNavLinks.forEach(link => {
+            const text = link.textContent?.trim().toLowerCase() || '';
+            
+            // Intercept login/signup buttons
+            if (text.includes('log in') || text.includes('login') || 
+                text.includes('sign up') || text.includes('signup')) {
+                
+                // Prevent default navigation
+                link.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    
+                    try {
+                        await signInWithPopup(auth, provider);
+                    } catch (error) {
+                        console.error("Login failed", error);
+                        alert("Login failed: " + error.message);
+                    }
+                });
+            }
+        });
+    }
+    
+    function updateUIForAuthState(user) {
+        const allNavLinks = document.querySelectorAll('nav a.btn');
+        
+        allNavLinks.forEach(link => {
+            const text = link.textContent?.trim().toLowerCase() || '';
+            
+            if (text.includes('log in') || text.includes('login') || 
+                text.includes('sign up') || text.includes('signup')) {
+                
+                if (user) {
+                    // User is signed in - convert button to user profile/logout
+                    link.textContent = user.displayName || user.email?.split('@')[0] || 'Account';
+                    link.title = 'Click to sign out';
+                    
+                    // Remove old click handler and add sign out handler
+                    const newLink = link.cloneNode(true);
+                    link.parentNode?.replaceChild(newLink, link);
+                    
+                    newLink.addEventListener('click', async (e) => {
+                        e.preventDefault();
+                        try {
+                            await signOut(auth);
+                        } catch (error) {
+                            console.error("Logout failed", error);
+                        }
+                    });
+                } else {
+                    // User is signed out - restore original text
+                    if (text.includes('sign up') || text.includes('signup')) {
+                        link.textContent = 'Sign up';
+                    } else {
+                        link.textContent = 'Log in';
+                    }
+                    link.title = '';
+                }
+            }
+        });
+    }
+    
+    function initAuth() {
+        navToggle();
+        setupAuthButtons();
+        
+        // Listen for auth state changes
+        onAuthStateChanged(auth, (user) => {
+            updateUIForAuthState(user);
+        });
+    }
+    
+    initAuth();
+    document.addEventListener('astro:after-swap', initAuth);
+
+
 </script>

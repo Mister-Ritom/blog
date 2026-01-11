@@ -1,0 +1,22 @@
+---
+/**
+ * AutoAdSense component
+ * Injects the Google AdSense script into the head for "Auto Ads" support.
+ * Should be placed in the <head> of Layout.astro.
+ */
+const adClient = import.meta.env.PUBLIC_ADSENSE_CLIENT_ID || 'ca-pub-test';
+const adsEnabled = import.meta.env.PUBLIC_ADSENSE_ENABLED === 'true';
+
+// Log for debugging
+if (adsEnabled) {
+    console.log(`[AutoAdSense] Initializing Auto Ads for client: ${adClient}`);
+}
+---
+
+{adsEnabled && (
+    <script 
+        async 
+        src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adClient}`}
+        crossorigin="anonymous"
+    ></script>
+)}

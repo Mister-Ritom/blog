@@ -1,0 +1,35 @@
+name: Auto Blog Generator
+
+on:
+  schedule:
+    # Run at 09:00 UTC every day.
+    - cron: '0 9 * * *'
+  workflow_dispatch: # Allow manual trigger for testing
+
+jobs:
+  write-blogs:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: |
+          # Install dependencies required for the auto-writer script
+          # We don't save them to package.json to avoid polluting the repo
+          npm install --no-save openai @sanity/client slugify dotenv tsx
+
+      - name: Generate and Publish Blogs
+        env:
+          SANITY_PROJECT_ID: ${{ secrets.SANITY_PROJECT_ID }}
+          SANITY_DATASET: ${{ secrets.SANITY_DATASET }}
+          SANITY_API_TOKEN: ${{ secrets.SANITY_API_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          AUTO_PUBLISH: ${{ vars.AUTO_PUBLISH || 'false' }} 
+        run: npx tsx auto-writer/run.ts

@@ -1,0 +1,27 @@
+---
+import AdSenseUnit from './AdSenseUnit.astro';
+
+interface Props {
+    adSlot?: string;
+}
+
+const { adSlot } = Astro.props;
+---
+
+<div class="in-article-ad">
+    <AdSenseUnit adSlot={adSlot} adFormat="fluid" />
+</div>
+
+<style>
+    .in-article-ad {
+        margin: 3rem 0;
+        display: flex;
+        justify-content: center;
+    }
+
+    @media (max-width: 768px) {
+        .in-article-ad {
+            margin: 2rem 0;
+        }
+    }
+</style>

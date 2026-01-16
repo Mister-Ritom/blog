@@ -6,7 +6,7 @@ import { sanityConfig } from './src/utils/sanity-client';
 
 // https://astro.build/config
 export default defineConfig({
-    site: process.env.PUBLIC_SITE_URL || 'http://localhost:3000',
+    site: process.env.PUBLIC_SITE_URL || 'https://ritom.netlify.app',
     image: {
         domains: ['cdn.sanity.io']
     },
